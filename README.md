@@ -8,7 +8,7 @@ Extract a Canopy Height Model from LiDAR data
 
 <br>
 
-Code to extract and load DSM and DTM data from the UK's (National LIDAR Programme)[https://data.gov.uk/dataset/f0db0249-f17b-4036-9e65-309148c97ce4/national-lidar-programme]
+Code to extract and load DSM and DTM data from the UK's [National LIDAR Programme](https://data.gov.uk/dataset/f0db0249-f17b-4036-9e65-309148c97ce4/national-lidar-programme)
 
 <br>
 
@@ -60,7 +60,7 @@ Project Organization
 #### To do
 - [x] Add renv.lock
 - [ ] Add contour and nestboxes
-- [ ] test vegetation model (see (here)[https://environment.data.gov.uk/dataset/ecae3bef-1e1d-4051-887b-9dc613c928ec])
+- [ ] test vegetation model (see [here](https://environment.data.gov.uk/dataset/ecae3bef-1e1d-4051-887b-9dc613c928ec))
 
 
 
