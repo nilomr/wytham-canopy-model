@@ -1,0 +1,76 @@
+```{r imports}
+
+box::use(read = src / utils / read) # Source code for this project
+box::use(terra[rast, minmax, vect, crs, terraplot = plot, crop])
+box::use(raster[extent])
+box::use(magrittr[`%>%`])
+box::use(dplyr[as_tibble])
+box::use(ggplot2[...])
+box::use(viridis[scale_fill_viridis])
+
+```
+
+```{r extract and load data}
+
+zipfiles <- Sys.glob(file.path(read$raw_data_dir, "*.zip")) # Find raw data
+read$extract_zipfiles(zipfiles) # Extract zip files to folders
+read$move_if_tif() # Move tifs if needed
+
+# EPSG codes: (1) EPSG:27700 - OSGB 1936 -- LiDAR data
+#             (2) 4326  -- everything else
+epsg_code <- "epsg:27700"
+
+# Provide coords of top right and bottom left vertices of the
+# bounding rectangle, then convert to extent object.
+topR <- read$latlon_reproj(51.790215, -1.289188, epsg_code)
+bottomL <- read$latlon_reproj(51.746210, -1.358950, epsg_code)
+boundbox <- extent(c(bottomL[1], topR[1], bottomL[2], topR[2]))
+
+# Read, combine and crop elevation models
+# Use either read$combine_ascfiles or read$combine_ascfiles
+# depending on your file formats
+models <- list()
+for (dir in c(read$DSM_dir, read$DTM_dir)) {
+    models[[basename(dir)]] <- read$combine_tiffiles(dir, boundbox)
+}
+
+# Read in woodland contour (with gaps)
+perimeter <- vect(read$perimeter_dir)
+terra::crs(perimeter) <- epsg_code
+```
+
+```{r build canopy height model}
+
+# CHM = Canopy Height Model
+CHM <- rast(models$DSM - models$DTM)
+terra::crs(CHM) <- epsg_code
+
+# Mask canopy model outside of the bounds of the woods
+woodland_CHM <- terra::crop(CHM, perimeter, mask = TRUE)
+
+# Check min and max points (in metres)
+minmax(woodland_CHM)
+
+# Filter points below 0.5 metres
+# (you can treat this as a matrix for algebra purposes)
+woodland_CHM[woodland_CHM < 0.5] <- NA
+
+
+# Quick and dirty plot
+woodland_CHM %>%
+    # terra::crop(., read$make_crop_view(woodland_CHM, 0.02)) %>%
+    terra::as.data.frame(., xy = TRUE) %>%
+    as_tibble() %>%
+    ggplot() +
+    geom_tile(aes(x = x, y = y, fill = layer), alpha = 1) +
+    # geom_polygon(data=perimeter, aes(x=long, y=lat, group=group),
+    #             fill=NA, color="grey50", size=0.25) +
+    scale_fill_viridis(begin = 0.1) +
+    coord_equal() +
+    labs(fill = "Height (m)", x = "\nEasting", y = "Northing\n") +
+    theme(legend.position = "right") +
+    theme(
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()
+    )
+```
